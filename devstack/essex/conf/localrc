@@ -1,0 +1,21 @@
+# Minimal Requirements
+ADMIN_PASSWORD=password
+MYSQL_PASSWORD=password
+RABBIT_PASSWORD=password
+SERVICE_PASSWORD=password
+SERVICE_TOKEN=tokentoken
+FLAT_INTERFACE=br100
+DEST=/opt/stack
+LOGFILE=stack.sh.log
+HOST_IP=127.0.0.1
+
+# Setup Syslog
+SYSLOG=True
+SYSLOG_HOST=$HOST_IP
+SYSLOG_PORT=516
+
+# Set Keystone Catolog to back against SQL
+KEYSTONE_CATALOG_BACKEND=sql
+
+# Disable rate-limiting (needed for Tempest)
+API_RATE_LIMIT=False
