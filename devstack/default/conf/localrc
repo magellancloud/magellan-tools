@@ -20,5 +20,5 @@ KEYSTONE_CATALOG_BACKEND=sql
 # Disable rate-limiting (needed for Tempest)
 API_RATE_LIMIT=False
 
-# Always get the correct branches for each repo
+# Ensure that the correct code is checked out
 RECLONE=yes
