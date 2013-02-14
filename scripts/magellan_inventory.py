@@ -10,29 +10,29 @@ parser = argparse.ArgumentParser(
     description="""
 Return an inventory of Magellan tenants and users as a JSON data structure.
 This is printed to standard output with the following format:
-{
-    "tenants" : {
-        "tenant_name" : {
-            "description" : "blah blah blah!",
-            enabled : True
-        }
-    },
-    users : {
-        "user_name" : {
-            "email" : "foo@example.com",
-            "active" : True,
-         }
-    },
-    memberships : {
-        "tenant_name" : {
-            "user_one" : "admin",
-            "user_two" : "Member"
+    {
+        "tenants" : {
+            "tenant_name" : {
+                "description" : "blah blah blah!",
+                enabled : True
+            }
         },
-        "tenant_two" : {
-            "user_two" : "admin"
+        users : {
+            "user_name" : {
+                "email"   : "foo@example.com",
+                "enabled" : True,
+             }
+        },
+        memberships : {
+            "tenant_name" : {
+                "user_one" : "admin",
+                "user_two" : "Member"
+            },
+            "tenant_two" : {
+                "user_two" : "admin"
+            }
         }
     }
-}
 """
 )
 parser.add_argument('--insecure', action='store_const', const=True,
