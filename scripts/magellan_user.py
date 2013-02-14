@@ -89,6 +89,12 @@ def update_user_tenant (keystone, args):
         # Exit with an error if we couldn't find the tenant
         print >> sys.stderr, "Tenant not found!"
         sys.exit(1)
+    # Remove the admin role for the user if we did not set the admin flag
+    if not args.is_admin:
+        try:
+            keystone.roles.remove_user_role(user, admin_role, tenant=tenant)
+        except NotFound:
+            pass
     if args.evict:
         # Evicting the user from the tenant
         try:
@@ -104,7 +110,7 @@ def update_user_tenant (keystone, args):
         role = admin_role if args.is_admin else member_role
         try:
             keystone.roles.add_user_role(user, role, tenant=tenant)
-        except:
+        except NotFound:
             pass
         
 if args.delete:
