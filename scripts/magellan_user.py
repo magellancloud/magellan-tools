@@ -56,6 +56,14 @@ def delete_user (keystone, args):
     user = get_user(args.user, keystone) 
     user.delete()
 
+def ensure_tenant (keystone, args):
+    matched = [ tenant for tenant in keystone.tenants.list()
+        if tenant.tenant_name == args.tenant ]
+    if len(matched):
+        return matched[0]
+    else:
+        return keystone.tenants.create(args.tenant)
+
 def ensure_user (keystone, args):
     user = get_user(args.user, keystone)
     # If no user was found, create the user with password and email
@@ -102,6 +110,7 @@ def update_user_tenant (keystone, args):
 if args.delete:
     delete_user(keystone, args)
 else:
+    ensure_tenant(keystone, args)
     ensure_user(keystone, args)
     if args.tenant != None:
         update_user_tenant(keystone, args)
