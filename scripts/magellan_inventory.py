@@ -51,9 +51,16 @@ keystone = client.Client(
 # Get standard admin and member roles:
 member_role = [ r for r in keystone.roles.list() if r.name == "Member"][0]
 admin_role  = [ r for r in keystone.roles.list() if r.name == "admin"][0] 
-
-tenants = { (tenant.tenant_name, { "description" : tenant.description, "enabled" : tenant.enabled }) for tenant in keystone.tenants.list() }
-users   = keystone.users.list()
+tenants = dict( (tenant.name, { "description" : tenant.description, "enabled" : tenant.enabled }) for tenant in keystone.tenants.list() )
+users   = dict( (user.name, { "email" : user.email, "enabled" : user.enabled } ) for user in keystone.users.list() )
 memberships = {}
+for tenant in keystone.tenants.list():
+    tenant_memberships = memberships.setdefault(tenant.name, {})
+    for user in tenant.list_users():
+        roles = user.list_roles(tenant=tenant.id)
+        if admin_role in roles:
+            tenant_memberships[user.name] = admin_role.name
+        elif member_role in roles:
+            tenant_memberships[user.name] = member_role.name
 data = { "tenants" : tenants, "users" : users, "memberships" : memberships }
 print json.dumps(data)
