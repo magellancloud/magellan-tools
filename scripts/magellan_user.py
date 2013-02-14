@@ -19,7 +19,7 @@ parser.add_argument('-u', dest='user',
     type=str, required=True)
 parser.add_argument('-t', dest='tenant',
     help="The tenant name, not the tenant_id.", type=str)
-parser.add_argument('--is_admin', action='store_const', const=True,
+parser.add_argument('--is-admin', action='store_const', dest='is_admin', const=True,
     help="Ensure that the user has 'admin' privileges on the tenant.")
 parser.add_argument('--disable', action='store_const', const=True,
     help="Disable the user.")
