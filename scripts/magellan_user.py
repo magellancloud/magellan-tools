@@ -58,7 +58,7 @@ def delete_user (keystone, args):
 
 def ensure_tenant (keystone, args):
     matched = [ tenant for tenant in keystone.tenants.list()
-        if tenant.tenant_name == args.tenant ]
+        if tenant.name == args.tenant ]
     if len(matched):
         return matched[0]
     else:
