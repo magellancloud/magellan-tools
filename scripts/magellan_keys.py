@@ -40,7 +40,10 @@ def ensure_key (nova, args):
         nova.keypairs.delete(args.name)
     elif args.rename:
         print "No key found with name " + args.name
-    elif not key_exists:
+    elif key_exists:
+        nova.keypairs.delete(args.name)
+        nova.keypairs.create(args.name, public_key=key_string)
+    else:
         nova.keypairs.create(args.name, public_key=key_string)
 
 nova = client.Client(args.user, args.password)
