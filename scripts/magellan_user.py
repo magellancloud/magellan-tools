@@ -69,7 +69,7 @@ def ensure_user (keystone, args):
     # If no user was found, create the user with password and email
     if user is None:
         if args.password is None:
-            print >> sys.stderr, "User not found and password is not supplied!"
+            print "User not found and password is not supplied!"
             sys.exit(1)
         keystone.users.create(
             name     = args.user,
@@ -90,7 +90,7 @@ def update_user_tenant (keystone, args):
     tenant = [ t for t in keystone.tenants.list() if t.name == args.tenant ][0]
     if tenant is None:
         # Exit with an error if we couldn't find the tenant
-        print >> sys.stderr, "Tenant not found!"
+        print "Tenant not found!"
         sys.exit(1)
     # Remove the admin role for the user if we did not set the admin flag
     if not args.is_admin:

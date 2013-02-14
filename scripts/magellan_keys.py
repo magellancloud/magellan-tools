@@ -39,7 +39,7 @@ def ensure_key (nova, args):
         nova.keypairs.create(args.rename, public_key=key_string)
         nova.keypairs.delete(args.name)
     elif args.rename:
-        print >> sys.stderr, "No key found with name " + args.name
+        print "No key found with name " + args.name
     elif not key_exists:
         nova.keypairs.create(args.name, public_key=key_string)
 
