@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import argparse
 import sys
+import os
 
-from novaclient.v1_1 import client
+from novaclient.v1_1 import client as nova_client
+from keystoneclient.v2_0 import client as keystone_client
 
 parser = argparse.ArgumentParser(
     description="""
@@ -31,8 +33,10 @@ key_string = " ".join(args.key_parts)
 def ensure_key (nova, args):
     matches = [ key for key in nova.keypairs.list() if key.name == args.name ]
     key_exists = True if len(matches) else False
-    if args.delete:
+    if args.delete and key_exists:
         nova.keypairs.delete(args.name)
+    elif args.delete:
+        pass
     elif args.rename and key_exists:
         key = matches[0]
         key_string= key.public_key
@@ -46,5 +50,22 @@ def ensure_key (nova, args):
     else:
         nova.keypairs.create(args.name, public_key=key_string)
 
-nova = client.Client(args.user, args.password)
+def get_nova(auth_url, args):
+    # Nova API requires a tenant so first get that
+    # via keystone
+    keystone = keyston_client.Client(
+        username=args.user,
+        password=args.password,
+        insecure=True,
+        auth_url=auth_url)
+    tenants = keystone.tenants.list()
+    if len(tenants) > 0:
+            
+        return nova_client.Client(args.user, args.password,
+                tenants[0].name, auth_url)
+    else:
+        sys.exit(0)
+
+auth_url = os.environ['AUTH_URL']
+nova = get_nova(auth_url, args)
 ensure_key(nova, args)
