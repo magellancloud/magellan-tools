@@ -66,6 +66,6 @@ def get_nova(auth_url, args):
     else:
         sys.exit(0)
 
-auth_url = os.environ['AUTH_URL']
+auth_url = os.environ['OS_AUTH_URL']
 nova = get_nova(auth_url, args)
 ensure_key(nova, args)
