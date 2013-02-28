@@ -53,7 +53,7 @@ def ensure_key (nova, args):
 def get_nova(auth_url, args):
     # Nova API requires a tenant so first get that
     # via keystone
-    keystone = keyston_client.Client(
+    keystone = keystone_client.Client(
         username=args.user,
         password=args.password,
         insecure=True,
