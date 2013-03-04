@@ -34,7 +34,8 @@ key_string = " ".join(args.key_parts)
 
 def fix_key_name(name):
     rx = re.compile('[\W]+')
-    return rx.sub('', name)
+    fixed_name = rx.sub('', name)
+    return fixed_name if len(fixed_name) else 'default' 
 
 def ensure_key (nova, args, key_string):
     args.name = fix_key_name(args.name)
