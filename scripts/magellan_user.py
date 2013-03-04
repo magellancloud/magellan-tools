@@ -83,7 +83,7 @@ def ensure_user (keystone, args):
         if args.disable:
             keystone.users.update_enabled(user, False if args.disable else True)
         if args.email:
-            keystone.users.update_email(user, args.email)
+            keystone.users.update(user, email=args.email)
 
 def update_user_tenant (keystone, args):
     user = get_user(args.user, keystone)
