@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 import argparse
-import sys
 import os
+import re
+import string
+import sys
 
 from novaclient.v1_1 import client as nova_client
 from keystoneclient.v2_0 import client as keystone_client
@@ -30,7 +32,12 @@ parser.add_argument('key_parts', nargs=argparse.REMAINDER)
 args = parser.parse_args()
 key_string = " ".join(args.key_parts)
 
-def ensure_key (nova, args):
+def fix_key_name(name):
+    rx = re.compile('[\W]+')
+    return rx.sub('', name)
+
+def ensure_key (nova, args, key_string):
+    args.name = fix_key_name(args.name)
     matches = [ key for key in nova.keypairs.list() if key.name == args.name ]
     key_exists = True if len(matches) else False
     if args.delete and key_exists:
@@ -39,7 +46,7 @@ def ensure_key (nova, args):
         pass
     elif args.rename and key_exists:
         key = matches[0]
-        key_string= key.public_key
+        key_string = key.public_key
         nova.keypairs.create(args.rename, public_key=key_string)
         nova.keypairs.delete(args.name)
     elif args.rename:
@@ -60,7 +67,6 @@ def get_nova(auth_url, args):
         auth_url=auth_url)
     tenants = keystone.tenants.list()
     if len(tenants) > 0:
-            
         return nova_client.Client(args.user, args.password,
                 tenants[0].name, auth_url)
     else:
@@ -68,4 +74,4 @@ def get_nova(auth_url, args):
 
 auth_url = os.environ['OS_AUTH_URL']
 nova = get_nova(auth_url, args)
-ensure_key(nova, args)
+ensure_key(nova, args, key_string)
