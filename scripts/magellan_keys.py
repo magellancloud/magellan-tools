@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import ConfigParser
 import logging
 import os
 import re
@@ -81,7 +82,14 @@ def get_nova(auth_url, region, args):
     else:
         sys.exit(0)
 
-auth_url = os.environ['OS_AUTH_URL']
-region   = os.environ['OS_REGION_NAME']
+cfg_file = os.path.expanduser("~/userbase.config")
+if not os.path.exists(cfg_file):
+    print "Config file " + cfg_file + " does not exist!"
+    sys.exit(1)
+cfg = ConfigParser.ConfigParser()
+cfg.read(cfg_file)
+
+auth_url = cfg.get("env", "auth_url")
+region   = cfg.get("env", "region_name") 
 nova = get_nova(auth_url, region, args)
 ensure_key(nova, args, key_string)

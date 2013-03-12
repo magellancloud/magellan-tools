@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import ConfigParser
 import os
 import sys
 from keystoneclient.exceptions import NotFound
@@ -36,12 +37,19 @@ parser.add_argument('--insecure', action='store_const', const=True,
 )
 
 args = parser.parse_args()
-env = os.environ
+
+cfg_file = os.path.expanduser("~/userbase.config")
+if not os.path.exists(cfg_file):
+    print "Config file " + cfg_file + " does not exist!"
+    sys.exit(1)
+cfg = ConfigParser.ConfigParser()
+cfg.read(cfg_file)
+
 keystone = client.Client(
-    username =    env['OS_USERNAME'],
-    password =    env['OS_PASSWORD'],
-    tenant_name = env['OS_TENANT_NAME'],
-    auth_url =    env['OS_AUTH_URL'],
+    username =    cfg.get("env", "username"),
+    password =    cfg.get("env", "password"),
+    tenant_name = cfg.get("env", "tenant_name"),
+    auth_url =    cfg.get("env", "auth_url"),
 )
 # Get standard admin and member roles:
 member_role = [ r for r in keystone.roles.list() if r.name == "Member"][0]
