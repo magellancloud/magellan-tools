@@ -46,7 +46,6 @@ keystone = client.Client(
     password =    env['OS_PASSWORD'],
     tenant_name = env['OS_TENANT_NAME'],
     auth_url =    env['OS_AUTH_URL'],
-    insecure =    args.insecure,
 )
 # Get standard admin and member roles:
 member_role = [ r for r in keystone.roles.list() if r.name == "Member"][0]

@@ -42,7 +42,6 @@ keystone = client.Client(
     password =    env['OS_PASSWORD'],
     tenant_name = env['OS_TENANT_NAME'],
     auth_url =    env['OS_AUTH_URL'],
-    insecure =    args.insecure,
 )
 # Get standard admin and member roles:
 member_role = [ r for r in keystone.roles.list() if r.name == "Member"][0]
@@ -78,10 +77,9 @@ def ensure_user (keystone, args):
             enabled  = False if args.disable else True
         )
     else:
+        keystone.users.update_enabled(user, False if args.disable else True)
         if args.password:
             keystone.users.update_password(user, args.password)
-        if args.disable:
-            keystone.users.update_enabled(user, False if args.disable else True)
         if args.email:
             keystone.users.update(user, email=args.email)
 

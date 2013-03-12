@@ -64,7 +64,6 @@ def get_nova(auth_url, args):
     keystone = keystone_client.Client(
         username=args.user,
         password=args.password,
-        insecure=True,
         auth_url=auth_url)
     tenants = keystone.tenants.list()
     if len(tenants) > 0:
