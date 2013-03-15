@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+import argparse
+import ConfigParser
+import MySQLdb
+import os
+import sys
+
+def get_user_id(cursors, username):
+    cursors['keystone'].execute('SELECT id from user where name="%s"' % (username))
+    result_tuple = cursors['keystone'].fetchone()
+    return result_tuple[0]
+
+def move_resources (cursors, db, table, old, new):
+    print 'UPDATE %s set user_id="%s" where user_id="%s"' % (table, old, new)
+
+parser = argparse.ArgumentParser(
+    description="Transfer resources owned by an OpenStack user to another user")
+parser.add_argument('donor-user', required=True)
+parser.add_argument('recipient-user', required=True)
+args = parser.parse_args()
+
+# Get DB Username and Password
+config = ConfigParser.ConfigParser()
+config.read(os.path.expanduser('~/mysql.config'))
+
+# Connect to databases
+dbs = [ 'keystone', 'nova' ]
+db_conns = {}
+db_cursors = {}
+for db in dbs:
+    db_conns[db] = MySQLdb.connect(
+        'localhost',
+        config.get('mysq', 'user'),
+        config.get('mysql', 'password'),
+        db
+    )
+    db_cursors[db] = db_conns[db].cursor()
+
+# Enumerate databases and tables with user_id entry
+resource_types = [
+    ['nova', 'instances'],
+    ['nova', 'security_groups'],
+    ['nova', 'key_pairs'],
+    ['nova', 'snapshots'],
+    ['nova', 'volumes'],
+]
+
+# Make changes
+donor_id = get_user_id(db_cursors, args['donor-user'])
+recipient_id = get_user_id(db_cursors, args['recipient-user'])
+for resource in resource_types:
+    (db, table) = resource
+    move_resources(db_cursors, db, table, donor_id, recipient_id)
