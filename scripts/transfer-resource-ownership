@@ -10,14 +10,27 @@ def get_user_id(cursors, username):
     result_tuple = cursors['keystone'].fetchone()
     return result_tuple[0]
 
-def move_resources (cursors, db, table, old, new):
-    print 'UPDATE %s set user_id="%s" where user_id="%s"' % (table, old, new)
+def move_resources (conns, cursors, db, table, old, new):
+    cursors[db].execute('SELECT id from %s where user_id="%s"' % (table, old))
+    ids = cursors[db].fetchall() 
+    for id in ids:
+	print ("Table: %s ID: %s Donor: %s Recipient: %s"
+		% (table, id[0], old, new))
+        cursors[db].execute('UPDATE %s set user_id="%s" where id="%s"' %
+	    (table, new, id[0]))
+	changed = len(cursors[db].fetchall())
+        if changed > 1:
+	    print "Error: %d records changed, expecting 1."
+            conns[db].rollback() 
+        else:
+	    conns[db].commit()
+        
 
 parser = argparse.ArgumentParser(
     description="Transfer resources owned by an OpenStack user to another user")
-parser.add_argument('donor-user', required=True)
-parser.add_argument('recipient-user', required=True)
-args = parser.parse_args()
+parser.add_argument('donor-user')
+parser.add_argument('recipient-user')
+args = parser.parse_args().__dict__
 
 # Get DB Username and Password
 config = ConfigParser.ConfigParser()
@@ -30,7 +43,7 @@ db_cursors = {}
 for db in dbs:
     db_conns[db] = MySQLdb.connect(
         'localhost',
-        config.get('mysq', 'user'),
+        config.get('mysql', 'username'),
         config.get('mysql', 'password'),
         db
     )
@@ -46,8 +59,8 @@ resource_types = [
 ]
 
 # Make changes
-donor_id = get_user_id(db_cursors, args['donor-user'])
-recipient_id = get_user_id(db_cursors, args['recipient-user'])
+donor_id = get_user_id(db_cursors, args.donor_user)
+recipient_id = get_user_id(db_cursors, args.recipient_user)
 for resource in resource_types:
     (db, table) = resource
-    move_resources(db_cursors, db, table, donor_id, recipient_id)
+    move_resources(db_conns, db_cursors, db, table, donor_id, recipient_id)
