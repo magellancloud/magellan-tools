@@ -2,6 +2,7 @@
 import argparse
 import ConfigParser
 import os
+import subprocess
 import sys
 from keystoneclient.exceptions import NotFound
 from keystoneclient.v2_0 import client
@@ -44,6 +45,9 @@ if not os.path.exists(cfg_file):
     sys.exit(1)
 cfg = ConfigParser.ConfigParser()
 cfg.read(cfg_file)
+wanted_env = dict(cfg.items('env'))
+for k,v in wanted_env.iteritems():
+    os.environ[k] = v
 
 keystone = client.Client(
     username =    cfg.get("env", "username"),
@@ -99,11 +103,11 @@ def update_user_tenant (keystone, args):
         print "Tenant not found!"
         sys.exit(1)
     # Remove the admin role for the user if we did not set the admin flag
-    if not args.is_admin:
-        try:
-            keystone.roles.remove_user_role(user, admin_role, tenant=tenant)
-        except NotFound:
-            pass
+    #if not args.is_admin:
+    #    try:
+    #        keystone.roles.remove_user_role(user, admin_role, tenant=tenant)
+    #    except Exception:
+    #        pass
     if args.evict:
         # Evicting the user from the tenant
         try:
@@ -117,10 +121,18 @@ def update_user_tenant (keystone, args):
     else:
         # Adding the user to the tenant with the correct role
         role = admin_role if args.is_admin else member_role
+        ub_user = wanted_env['username']
+        ub_pass = wanted_env['password']
+        ub_tenant = wanted_env['tenant_name']
+        auth_url = wanted_env['auth_url']
         try:
-            keystone.roles.add_user_role(user, role, tenant=tenant)
-        except NotFound:
-            pass
+            subprocess.check_output(["keystone", "--os_username", ub_user, "--os_password", ub_pass,
+                                     "--os_tenant_name", ub_tenant, "--os_auth_url", auth_url,
+                                     "user-role-add", "--user", user.id, "--tenant_id", tenant.id,
+                                     "--role", role.id])
+        except Exception, e:
+            print "Error adding %s user to %s tenant: %s" % (user.name, tenant.name, e)
+            sys.exit(1)
         
 if args.delete:
     delete_user(keystone, args)
