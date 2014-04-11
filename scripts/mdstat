@@ -79,6 +79,8 @@ def main():
                         help='Return summary stats of each mdadm device')
     parser.add_argument('-d', '--disk', action='store_true',
                         help='Return table of disk devices')
+    parser.add_argument('-H', '--headers', action='store_true',
+                        help='Print headers for tables.')
     args = parser.parse_args()
     devices = get_devices()
     all_info = get_all(devices)
@@ -92,7 +94,8 @@ def main():
                    ('rebuild_status', 'rebuild_status', 30),
                    ('c_time', 'creation_time', 30), ('u_time', 'update_time', 30)]
         formatstr = ''.join(["%%%ds" % c[2] for c in columns])
-        print formatstr % tuple([c[0] for c in columns])
+        if args.headers:
+            print formatstr % tuple([c[0] for c in columns])
         rep_str = lambda x: x.replace(' ', '_') if x is not None else '-'
         key_fns = {'rebuild_status': rep_str, 'state': rep_str}
         nil_fn = lambda x: x
@@ -106,7 +109,8 @@ def main():
                    ('minor', 'minor', 10), ('raid_device', 'raid_device', 12),
                    ('state', 'state', 30)]
         formatstr = ''.join(["%%%ds" % c[2] for c in columns])
-        print formatstr % tuple([c[0] for c in columns])
+        if args.headers:
+             print formatstr % tuple([c[0] for c in columns])
         fix_str = lambda x: x.replace(' ', '_') if x is not None else '-'
         for row in all_info:
             for disk in row['devices']:
