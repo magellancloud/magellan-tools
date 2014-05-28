@@ -46,6 +46,7 @@ _mdadm_detail_rx = re.compile(
     "\s*Spare Devices : (?P<spare_devices>[^\n]+)\n.*\n"
     "\s*Layout : (?P<layout>[^\n]+)\n"
     "\s*Chunk Size : (?P<chunk_size>[^\n]+)\n\n"
+    "(\s*Resync Status : (?P<resync_status>[^\n]+)\n\n)*"
     "(\s*Rebuild Status : (?P<rebuild_status>[^\n]+)\n\n)*"
     "\s*Name : (?P<namestr>[^\n]+)\n"
     "\s*UUID : (?P<uuid>[^\n]+)\n"
