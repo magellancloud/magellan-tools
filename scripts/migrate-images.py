@@ -12,6 +12,7 @@ from glanceclient import exc as glance_exceptions
 
 LOG = logging.getLogger('default')
 
+
 def _download_image(deployment, image, filename):
     size = 0
     start = datetime.datetime.now()
@@ -36,12 +37,12 @@ def _upload_image(deployment, image, filename, owner_map=None):
         kwargs['owner'] = owner_map[kwargs['owner']]
     with open(filename, 'r') as fh:
         kwargs['data'] = fh
-	start = datetime.datetime.now()
+        start = datetime.datetime.now()
         new_image = deployment.glance.images.create(**kwargs)
-	delta = datetime.datetime.now() - start
-	size = new_image.size
-    	mb = 2 ** 20
-	mbps = "%0.2f Mbps" % (size/mb/delta.total_seconds())
+        delta = datetime.datetime.now() - start
+        size = new_image.size
+        mb = 2 ** 20
+        mbps = "%0.2f Mbps" % (size/mb/delta.total_seconds())
         LOG.debug('Uploaded image %s to %s (%s)' %
                  (image.id, deployment.name, mbps))
     os.unlink(filename)
@@ -70,7 +71,7 @@ def _sync_metadata(image, source, destination, owner_map=None):
         elif d_member and d_member.can_share != member.can_share:
             LOG.debug("Member %s setting can_share to %s for image %s in %s" %
                       (member_id, image.id, member.can_share,
-                       destination.name)) 
+                       destination.name))
             destination_image_members.delete(image.id, member_id)
             destination_image_members.create(image.id, member_id, can_share)
         else:
@@ -127,7 +128,7 @@ class OwnerMap(object):
                 continue
             LOG.warn('User %s in %s not found in %s' %
                      (name, destination.name, source.name))
-    
+
     def __getitem__(self, id):
         if id in self.s2d:
             return self.s2d[id]
@@ -135,6 +136,7 @@ class OwnerMap(object):
             return self.d2s[id]
         else:
             raise KeyError("Unknown user %s" % id)
+
 
 class Deployment(object):
     def __init__(self, config, section):
