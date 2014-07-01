@@ -1,0 +1,123 @@
+#!/usr/bin/env python
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+_mdstat_rx = re.compile("(?P<mdadm_device>\S+) : "
+                        "(?P<state>\S+) (?P<raid_mode>\S+) "
+                        "(?P<device_list>[^\n]*)\n\s+(?P<blocks>\d+) "
+                        "blocks super (?P<super>[\d\.]+) level "
+                        "(?P<raid_level>\d+), (?P<chunk_size>\d+[kmg]) "
+                        "chunk, algorithm (?P<algorithm>\d+) "
+                        "\[(?P<devices_expected>\d+)\/"
+                        "(?P<devices_available>\d+)\] "
+                        "\[(?P<device_states>[_U]+)\]")
+#_dev_list_rx = re.compile("(?P<device>[^\s\[]+)\[(?P<number>\d+)\]\s*")
+def get_devices():
+    devices = []
+    with open('/proc/mdstat', 'r') as fh:
+        _ignore_rx = re.compile("^(Personalities)|(unused)")
+        text = "\n".join([l for l in fh.readlines() if not _ignore_rx.match(l)])
+        for match in _mdstat_rx.finditer(text):
+            data = match.groupdict()
+            fn = lambda match: match.groupdict()
+            devices.append(data['mdadm_device'])
+            #data['devices'] = map(fn, _dev_list_rx.finditer(data['device_list']))
+            #del data['device_list']
+    return devices
+
+_mdadm_detail_rx = re.compile(
+    "(?P<device>[^:]+):\n"
+    "\s*Version : (?P<version>[^\n]+)\n"
+    "\s*Creation Time : (?P<creation_time>[^\n]+)\n"
+    "\s*Raid Level : (?P<raid_level>[^\n]+)\n"
+    "\s*Array Size : (?P<array_size>\d+).*\n"
+    "\s*Used Dev Size : (?P<used_dev_size>\d+).*\n"
+    "\s*Raid Devices : (?P<raid_devices>[^\n]+)\n"
+    "\s*Total Devices : (?P<total_devices>[^\n]+)\n"
+    "\s*Persistence : (?P<persistence>[^\n]+)\n.*\n"
+    "\s*Update Time : (?P<update_time>[^\n]+)\n"
+    "\s*State : (?P<state>[^\n]+)\n"
+    "\s*Active Devices : (?P<active_devices>[^\n]+)\n"
+    "\s*Working Devices : (?P<working_devices>[^\n]+)\n"
+    "\s*Failed Devices : (?P<failed_devices>[^\n]+)\n"
+    "\s*Spare Devices : (?P<spare_devices>[^\n]+)\n.*\n"
+    "\s*Layout : (?P<layout>[^\n]+)\n"
+    "\s*Chunk Size : (?P<chunk_size>[^\n]+)\n\n"
+    "(\s*Resync Status : (?P<resync_status>[^\n]+)\n\n)*"
+    "(\s*Rebuild Status : (?P<rebuild_status>[^\n]+)\n\n)*"
+    "\s*Name : (?P<namestr>[^\n]+)\n"
+    "\s*UUID : (?P<uuid>[^\n]+)\n"
+    "\s*Events : (?P<events>[^\n]+)\n.*\n")
+def get_all(devices):
+    detailed = []
+    for device in devices:
+        device = os.path.join('/dev/', device)
+        text = subprocess.check_output(['mdadm', '--detail', device])
+        for m in  _mdadm_detail_rx.finditer(text):
+            data = m.groupdict()
+            # Disk table comes after events
+            disk_rows = text[m.end('events'):].splitlines()
+            disk_data = []
+            for row in disk_rows:
+                row = row.split()
+                if len(row) < 6:
+                     continue
+                disk_data.append({'number' : row[0], 'major' : row[1],
+                                  'minor' : row[2], 'raid_device' : row[3],
+                                  'state' : ' '.join(row[4:len(row)-1]),
+                                  'dev' : row[-1]})
+            data['devices'] = disk_data
+            detailed.append(data)
+    return detailed
+
+def main():
+    desc = "Parse the output of cat /proc/mdstat, default JSON."
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument('-s', '--stat', action='store_true',
+                        help='Return summary stats of each mdadm device')
+    parser.add_argument('-d', '--disk', action='store_true',
+                        help='Return table of disk devices')
+    parser.add_argument('-H', '--headers', action='store_true',
+                        help='Print headers for tables.')
+    args = parser.parse_args()
+    devices = get_devices()
+    all_info = get_all(devices)
+    if args.stat:
+        columns = [('dev', 'device', 10), ('raid', 'raid_level', 10),
+                   ('version', 'version', 10),
+                   ('size', 'array_size', 16), ('events', 'events', 10),
+                   ('d_total', 'total_devices', 10), ('d_active', 'active_devices', 10),
+                   ('d_working', 'working_devices', 10), ('d_spare', 'spare_devices', 10),
+                   ('d_failed', 'failed_devices', 10), ('state', 'state', 30),
+                   ('rebuild_status', 'rebuild_status', 30),
+                   ('c_time', 'creation_time', 30), ('u_time', 'update_time', 30)]
+        formatstr = ''.join(["%%%ds" % c[2] for c in columns])
+        if args.headers:
+            print formatstr % tuple([c[0] for c in columns])
+        rep_str = lambda x: x.replace(' ', '_') if x is not None else '-'
+        key_fns = {'rebuild_status': rep_str, 'state': rep_str}
+        nil_fn = lambda x: x
+        for row in all_info:
+            # call key_fn on each column else nil_fn
+            formatted = [key_fns.get(c[1], nil_fn)(row.get(c[1], '-')) for c in columns]
+            print formatstr % tuple(formatted)
+    elif args.disk:
+        columns = [('md_dev', 'device', 12), ('dev', 'dev', 20),
+                   ('number', 'number', 10), ('major', 'major', 10),
+                   ('minor', 'minor', 10), ('raid_device', 'raid_device', 12),
+                   ('state', 'state', 30)]
+        formatstr = ''.join(["%%%ds" % c[2] for c in columns])
+        if args.headers:
+             print formatstr % tuple([c[0] for c in columns])
+        fix_str = lambda x: x.replace(' ', '_') if x is not None else '-'
+        for row in all_info:
+            for disk in row['devices']:
+                print formatstr % tuple([fix_str(disk.get(c[1], row.get(c[1], '-'))) for c in columns])
+    else:
+        json.dump(all_info, sys.stdout, sort_keys=True, indent=4, separators=(',',': '))
+
+if __name__ == '__main__':
+    main()

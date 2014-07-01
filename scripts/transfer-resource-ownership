@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+import argparse
+import ConfigParser
+import MySQLdb
+import os
+import sys
+
+def get_user_id(cursors, username):
+    cursors['keystone'].execute('SELECT id from user where name="%s"' % (username))
+    result_tuple = cursors['keystone'].fetchone()
+    return result_tuple[0]
+
+def move_resources (conns, cursors, db, table, old, new):
+    cursors[db].execute('SELECT id from %s where user_id="%s"' % (table, old))
+    ids = cursors[db].fetchall() 
+    for id in ids:
+	print ("Table: %s ID: %s Donor: %s Recipient: %s"
+		% (table, id[0], old, new))
+        cursors[db].execute('UPDATE %s set user_id="%s" where id="%s"' %
+	    (table, new, id[0]))
+	changed = len(cursors[db].fetchall())
+        if changed > 1:
+	    print "Error: %d records changed, expecting 1."
+            conns[db].rollback() 
+        else:
+	    conns[db].commit()
+        
+
+parser = argparse.ArgumentParser(
+    description="Transfer resources owned by an OpenStack user to another user")
+parser.add_argument('donor-user')
+parser.add_argument('recipient-user')
+args = parser.parse_args().__dict__
+
+# Get DB Username and Password
+config = ConfigParser.ConfigParser()
+config.read(os.path.expanduser('~/mysql.config'))
+
+# Connect to databases
+dbs = [ 'keystone', 'nova' ]
+db_conns = {}
+db_cursors = {}
+for db in dbs:
+    db_conns[db] = MySQLdb.connect(
+        'localhost',
+        config.get('mysql', 'username'),
+        config.get('mysql', 'password'),
+        db
+    )
+    db_cursors[db] = db_conns[db].cursor()
+
+# Enumerate databases and tables with user_id entry
+resource_types = [
+    ['nova', 'instances'],
+    ['nova', 'security_groups'],
+    ['nova', 'key_pairs'],
+    ['nova', 'snapshots'],
+    ['nova', 'volumes'],
+]
+
+# Make changes
+donor_id = get_user_id(db_cursors, args.donor_user)
+recipient_id = get_user_id(db_cursors, args.recipient_user)
+for resource in resource_types:
+    (db, table) = resource
+    move_resources(db_conns, db_cursors, db, table, donor_id, recipient_id)
