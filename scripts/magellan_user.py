@@ -1,11 +1,19 @@
-#!/usr/bin/env python
+#!/usr/local/lib/python2.7.9/bin/python
+##!/usr/bin/env python
 import argparse
 import ConfigParser
+#from configparser import ConfigParser
 import os
 import subprocess
 import sys
 from keystoneclient.exceptions import NotFound
 from keystoneclient.v2_0 import client
+
+import urllib3
+#urllib3.disable_warnings()
+#import logging
+#logging.basicConfig(level=logging.DEBUG)
+
 
 def main():
     desc = """Update a user in Magellan.
@@ -44,7 +52,7 @@ is supplied.
     # independently update.
     cfg_file = os.path.expanduser("~/userbase.config")
     if not os.path.exists(cfg_file):
-        print "Config file %s does not exist!" % cfg_file
+        print("Config file %s does not exist!" % cfg_file)
         sys.exit(1)
     cfg = ConfigParser.ConfigParser()
     cfg.read(cfg_file)
@@ -95,7 +103,7 @@ def ensure_user(keystone, args):
     # If no user was found, create the user with password and email
     if user is None:
         if args.password is None:
-            print "User not found and password is not supplied!"
+            print("User not found and password is not supplied!")
             sys.exit(1)
         keystone.users.create(
             name     = args.user,
@@ -115,7 +123,7 @@ def update_user_tenant(keystone, args, admin_role=None, member_role=None):
     tenant = [ t for t in keystone.tenants.list() if t.name == args.tenant ][0]
     if tenant is None:
         # Exit with an error if we couldn't find the tenant
-        print "Tenant not found!"
+        print("Tenant not found!")
         sys.exit(1)
     # Remove the admin role for the user if we did not set the admin flag
     #if not args.is_admin:
@@ -145,8 +153,8 @@ def update_user_tenant(keystone, args, admin_role=None, member_role=None):
                                      "--os_tenant_name", ub_tenant, "--os_auth_url", auth_url,
                                      "user-role-add", "--user", user.id, "--tenant_id", tenant.id,
                                      "--role", role.id])
-        except Exception, e:
-            print "Error adding %s user to %s tenant: %s" % (user.name, tenant.name, e)
+        except Exception as e:
+            print("Error adding %s user to %s tenant: %s" % (user.name, tenant.name, e))
             sys.exit(1)
 
 if __name__ == '__main__':
