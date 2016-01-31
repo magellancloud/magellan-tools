@@ -1,5 +1,24 @@
 #!/usr/local/lib/python2.7.9/bin/python
 ##!/usr/bin/env python
+
+"""
+This script moves the users, roles and projects between environments using OS commands. It cannot, however, move the passwords
+so that must be accomplished manually. The select statement below will create a file with the usernames and passwords. 
+
+Take the output of that and move it to a machine that can access the database for the new environment.
+
+Then run the python snippet to process the CSV into a SQL file.
+
+Finally, run that SQL file against the destination database.
+
+SELECT name, password FROM user INTO OUTFILE '/tmp/users.csv' FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\n';
+
+users = open("/tmp/users.csv")
+for user in users:
+	(username, password) = user.split(',')
+	print('update user set password = %s where name = %s;' % (password, username))
+"""
+
 import string
 import random
 import argparse
